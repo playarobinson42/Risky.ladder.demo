@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Risk Ladder</title>
+
+<style>
+body{
+    margin:0;
+    background:#0b0f18;
+    font-family:system-ui, -apple-system, sans-serif;
+    color:#ffffff;
+    text-align:center;
+    overflow-x:hidden;
+}
+
+h1{
+    margin-top:20px;
+    font-weight:600;
+    letter-spacing:1px;
+}
+
+#ladder{
+    display:flex;
+    flex-direction:column-reverse;
+    align-items:center;
+    margin-top:30px;
+    gap:14px;
+}
+
+.step{
+    width:210px;
+    padding:16px;
+    border-radius:14px;
+    background:#151a24;
+    font-size:19px;
+    opacity:.3;
+    transition:.3s ease;
+    border:1px solid #1f2635;
+}
+
+.active{
+    background:#ff7a00;
+    opacity:1;
+    transform:scale(1.08);
+    box-shadow:0 0 25px rgba(255,122,0,.7);
+}
+
+.hype{
+    animation:electric 1s infinite alternate;
+}
+
+@keyframes electric{
+    from{
+        box-shadow:0 0 10px rgba(0,140,255,.3);
+        border-color:#004cff;
+    }
+    to{
+        box-shadow:0 0 28px rgba(0,140,255,.9);
+        border-color:#2b7bff;
+    }
+}
+
+#rollBox{
+    margin-top:28px;
+    font-size:24px;
+    font-weight:700;
+    height:30px;
+}
+
+#status{
+    margin-top:10px;
+    font-size:17px;
+    min-height:24px;
+}
+
+/* Collapse flash */
+.flash{
+    animation:flashRed .25s;
+}
+
+@keyframes flashRed{
+    from{background:#3a0000;}
+    to{background:#0b0f18;}
+}
+
+/* Bottom Panel */
+#bottomPanel{
+    position:fixed;
+    bottom:0;
+    width:100%;
+    background:#121722;
+    padding:20px 10px 30px 10px;
+    box-shadow:0 -10px 30px rgba(0,0,0,.7);
+}
+
+#bet{
+    width:100px;
+    padding:10px;
+    border-radius:10px;
+    border:1px solid #2b7bff;
+    background:#0f141d;
+    color:white;
+    text-align:center;
+    font-size:17px;
+}
+
+button{
+    padding:14px 28px;
+    margin:10px;
+    border-radius:10px;
+    background:#101722;
+    color:white;
+    border:2px solid #ff7a00;
+    font-size:16px;
+    cursor:pointer;
+    transition:.2s;
+}
+
+button:hover{
+    border-color:#2b7bff;
+    box-shadow:0 0 18px rgba(0,140,255,.7);
+}
+
+button:active{
+    transform:scale(.95);
+}
+</style>
+</head>
+
+<body>
+
+<h1>Risk Ladder</h1>
+
+<div id="ladder"></div>
+<div id="rollBox"></div>
+<div id="status"></div>
+
+<div id="bottomPanel">
+    Bet: $
+    <input type="number" id="bet" value="10">
+    <br>
+    <button onclick="climb()">Climb</button>
+    <button onclick="cashOut()">Cash Out</button>
+</div>
+
+<script>
+
+let multipliers=[1.05,1.15,1.35,1.7,2.5,4,7,15,50,250];
+let survival=[0.99,0.98,0.96,0.94,0.90,0.82,0.70,0.50,0.25,0.10];
+
+let step=-1;
+let active=false;
+let momentum=0;
+
+const ladder=document.getElementById("ladder");
+const status=document.getElementById("status");
+const rollBox=document.getElementById("rollBox");
+
+function build(){
+    ladder.innerHTML="";
+    multipliers.forEach((m,i)=>{
+        let div=document.createElement("div");
+        div.className="step";
+        div.id="s"+i;
+        div.innerHTML=m+"x";
+        ladder.appendChild(div);
+    });
+}
+
+function resetRound(){
+    step=-1;
+    active=true;
+    momentum=0;
+    status.innerHTML="";
+    rollBox.innerHTML="";
+    document.querySelectorAll(".step").forEach(s=>{
+        s.classList.remove("active","hype");
+    });
+}
+
+function animateRoll(final, callback){
+    let count=0;
+    let interval=setInterval(()=>{
+        rollBox.innerHTML="Roll: "+(Math.random()*100).toFixed(1);
+        count++;
+        if(count>14){
+            clearInterval(interval);
+            rollBox.innerHTML="Roll: "+final.toFixed(1);
+            callback();
+        }
+    },40);
+}
+
+function climb(){
+
+    if(!active) resetRound();
+    if(step>=multipliers.length-1) return;
+
+    step++;
+
+    let roll=Math.random()*100;
+    let threshold=survival[step]*100;
+
+    animateRoll(roll,()=>{
+
+        if(roll>threshold){
+            status.innerHTML="Collapse";
+            active=false;
+            document.body.classList.add("flash");
+            setTimeout(()=>document.body.classList.remove("flash"),250);
+            return;
+        }
+
+        activateStep();
+    });
+}
+
+function activateStep(){
+    let div=document.getElementById("s"+step);
+    div.classList.add("active");
+
+    if(step>=6){
+        div.classList.add("hype");
+    }
+
+    momentum++;
+}
+
+function cashOut(){
+    if(!active || step<0) return;
+
+    let bet=parseFloat(document.getElementById("bet").value);
+    let payout=bet*multipliers[step];
+
+    status.innerHTML="Cashed Out: $"+payout.toFixed(2);
+    active=false;
+}
+
+build();
+
+</script>
+
+</body>
+</html>
